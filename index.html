@@ -1585,6 +1585,30 @@ Chúc các bạn nữ 10A10 ngày 20/10 nhận được thật nhiều hoa tươ
         let currentWishStyle = 'sweet';
         let currentCardMode = 'card';
 
+        // BLACKLIST: các họ tên này không được tạo/đổi lời chúc cá nhân.
+        const BLACKLISTED_NAMES = [
+            'Lương Thị Ngân',
+            'Hoàng Thị Cẩm Ly'
+        ];
+
+        function normalizePersonName(name) {
+            return name
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]+/g, ' ')
+                .trim()
+                .replace(/\s+/g, ' ');
+        }
+
+        function isBlacklistedName(name) {
+            const normalized = normalizePersonName(name);
+            return normalized.length > 0 && BLACKLISTED_NAMES.some(
+                blockedName => normalizePersonName(blockedName) === normalized
+            );
+        }
+
         const wishDatabase = {
             sweet: {
                 badges: [
@@ -1669,7 +1693,10 @@ Chúc các bạn nữ 10A10 ngày 20/10 nhận được thật nhiều hoa tươ
 
         function updateCardNameLive() {
             const rawName = document.getElementById('girlNameInput').value.trim();
-            const displayName = rawName || 'Bạn nữ xinh đẹp 10A10';
+            const blocked = isBlacklistedName(rawName);
+            const displayName = blocked
+                ? 'Tên không tạo được'
+                : (rawName || 'Bạn nữ xinh đẹp 10A10');
             document.getElementById('cardRecipientName').textContent = displayName;
             document.getElementById('vipRecipientName').textContent = displayName;
         }
@@ -1690,6 +1717,19 @@ Chúc các bạn nữ 10A10 ngày 20/10 nhận được thật nhiều hoa tươ
         function generatePersonalCard() {
             const inputEl = document.getElementById('girlNameInput');
             const rawName = inputEl.value.trim();
+
+            if (isBlacklistedName(rawName)) {
+                const blockedMessage = 'Không tạo được lời chúc.';
+                document.getElementById('cardBadgeTitle').textContent = '⛔ Tên không tạo được';
+                document.getElementById('cardRecipientName').textContent = 'Tên không tạo được';
+                document.getElementById('cardWishContent').textContent = blockedMessage;
+                document.getElementById('vipBadgeTitle').textContent = '⛔ Tên không tạo được';
+                document.getElementById('vipRecipientName').textContent = 'Tên không tạo được';
+                document.getElementById('vipWishContent').textContent = blockedMessage;
+                showToast(blockedMessage, '⛔');
+                return;
+            }
+
             const displayName = rawName ? rawName : 'Bạn nữ xinh đẹp 10A10';
 
             const stylePack = wishDatabase[currentWishStyle] || wishDatabase.sweet;
